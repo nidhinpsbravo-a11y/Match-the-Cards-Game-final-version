@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Match - Premium Card Game</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700;800&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .floating-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0; }
+            25% { opacity: 0.3; }
+            50% { opacity: 0.6; transform: translateY(-150px) rotate(180deg); }
+            75% { opacity: 0.3; }
+        }
+
+        /* START SCREEN */
+        .start-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .game-logo {
+            font-family: 'Comfortaa', sans-serif;
+            font-size: clamp(3rem, 8vw, 5rem);
+            font-weight: 700;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 4s ease infinite;
+            margin-bottom: 20px;
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .players-intro {
+            display: flex;
+            gap: 40px;
+            margin: 40px 0;
+            align-items: center;
+        }
+
+        .player-intro {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .player-intro .circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .blue { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+        .red { background: linear-gradient(135deg, #fa709a, #fee140); }
+
+        .start-btn {
+            background: linear-gradient(135deg, #96ceb4, #ffeaa7);
+            color: #333;
+            border: none;
+            padding: 20px 50px;
+            font-size: 1.8rem;
+            font-weight: 700;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            font-family: 'Comfortaa', sans-serif;
+            margin-top: 30px;
+            transform: scale(1);
+        }
+
+        .start-btn:hover {
+            transform: scale(1.1) translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .start-btn:active {
+            transform: scale(1.05) translateY(-2px);
+        }
+
+        /* GAME SCREEN */
+        .game-screen {
+            display: none;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 0 20px;
+        }
+
+        .player-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .player-circle.active {
+            transform: scale(1.2);
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
+        }
+
+        .player-circle::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            right: -5px;
+            bottom: -5px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.3), transparent);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .player-circle.active::before {
+            opacity: 1;
+        }
+
+        .game-area {
+            height: calc(100vh - 140px);
+            position: relative;
+            overflow: hidden;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .card {
+            position: absolute;
+            width: 60px;
+            height: 90px;
+            background: linear-gradient(145deg, #f0f2f5, #d1d9e6);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            border: 2px solid #e0e6ed;
+            transform-style: preserve-3d;
+        }
+
+        .card:hover {
+            transform: translateY(-8px) scale(1.05);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .card.flipped {
+            background: linear-gradient(145deg, #4ecdc4, #44a08d);
+            border-color: #4ecdc4;
+        }
+
+        .card.matched {
+            background: linear-gradient(145deg, #96ceb4, #ffecd2);
+            border-color: #96ceb4;
+            opacity: 0.8;
+            cursor: default;
+        }
+
+        .card-content {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: white;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            font-family: 'Comfortaa', sans-serif;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .card.flipped .card-content,
+        .card.matched .card-content {
+            opacity: 1;
+        }
+
+        .card-back {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            background: linear-gradient(145deg, #667eea, #764ba2);
+            border-radius: 8px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            transition: opacity 0.3s ease;
+            font-family: 'Comfortaa', sans-serif;
+        }
+
+        .card.flipped .card-back,
+        .card.matched .card-back {
+            opacity: 0;
+        }
+
+        .score-animation {
+            position: absolute;
+            font-size: 2rem;
+            font-weight: 800;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+            z-index: 1000;
+            font-family: 'Comfortaa', sans-serif;
+        }
+
+        .game-over-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .game-over-content {
+            background: linear-gradient(135deg, #ffeaa7, #fab1a0);
+            border-radius: 30px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            transform: scale(0);
+            animation: popIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+        }
+
+        @keyframes popIn {
+            to { transform: scale(1); }
+        }
+
+        .game-over-content h2 {
+            font-family: 'Comfortaa', sans-serif;
+            font-size: 2.5rem;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .winner-text {
+            font-size: 1.3rem;
+            color: #666;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+
+        .game-over-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .game-btn {
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Comfortaa', sans-serif;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            min-width: 140px;
+        }
+
+        .restart-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .exit-btn {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+        }
+
+        .game-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        @media (max-width: 768px) {
+            .players-intro {
+                gap: 30px;
+            }
+            
+            .player-intro {
+                font-size: 1.2rem;
+            }
+            
+            .game-header {
+                padding: 0 10px;
+            }
+            
+            .player-circle {
+                width: 70px;
+                height: 70px;
+                font-size: 1.5rem;
+            }
+            
+            .card {
+                width: 50px;
+                height: 75px;
+            }
+            
+            .card-content {
+                font-size: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .game-logo {
+                font-size: 2.5rem;
+            }
+            
+            .players-intro {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .card {
+                width: 45px;
+                height: 65px;
+            }
+            
+            .card-content {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-particles" id="particles"></div>
+    
+    <!-- START SCREEN -->
+    <div class="start-screen" id="startScreen">
+        <h1 class="game-logo">✨ Memory Match ✨</h1>
+        
+        <div class="players-intro">
+            <div class="player-intro">
+                <div class="circle blue">1</div>
+                <span>Player 1</span>
+            </div>
+            <div class="player-intro">
+                <div class="circle red">2</div>
+                <span>Player 2</span>
+            </div>
+        </div>
+        
+        <button class="start-btn" onclick="startGame()">🎮 Start Game</button>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div class="game-screen" id="gameScreen">
+        <div class="game-header">
+            <div class="player-circle blue active" id="player1Circle">0</div>
+            <div class="player-circle red" id="player2Circle">0</div>
+        </div>
+        
+        <div class="game-area" id="gameArea"></div>
+    </div>
+
+    <!-- GAME OVER OVERLAY -->
+    <div class="game-over-overlay" id="gameOverOverlay">
+        <div class="game-over-content">
+            <h2>🎉 Game Complete! 🎉</h2>
+            <div class="winner-text" id="winnerText"></div>
+            <div class="game-over-buttons">
+                <button class="game-btn restart-btn" onclick="restartGame()">🔄 Play Again</button>
+                <button class="game-btn exit-btn" onclick="exitGame()">🚪 Exit Game</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sound Effects
+        const sounds = {
+            cardFlip: null,
+            match: null,
+            wrong: null,
+            gameWin: null
+        };
+
+        // Initialize sounds using Web Audio API
+        function initSounds() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Card flip sound (short click)
+            sounds.cardFlip = () => {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.1);
+            };
+            
+            // Match found sound (success)
+            sounds.match = () => {
+                const oscillator1 = audioContext.createOscillator();
+                const oscillator2 = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator1.connect(gainNode);
+                oscillator2.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator1.frequency.setValueAtTime(523, audioContext.currentTime); // C5
+                oscillator2.frequency.setValueAtTime(659, audioContext.currentTime); // E5
+                oscillator1.frequency.setValueAtTime(784, audioContext.currentTime + 0.1); // G5
+                oscillator2.frequency.setValueAtTime(1047, audioContext.currentTime + 0.1); // C6
+                
+                gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+                
+                oscillator1.start();
+                oscillator2.start();
+                oscillator1.stop(audioContext.currentTime + 0.4);
+                oscillator2.stop(audioContext.currentTime + 0.4);
+            };
+            
+            // Wrong match sound (negative)
+            sounds.wrong = () => {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(150, audioContext.currentTime + 0.3);
+                
+                gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.3);
+            };
+            
+            // Game win sound (celebration)
+            sounds.gameWin = () => {
+                const frequencies = [523, 659, 784, 1047, 1319]; // C, E, G, C, E
+                frequencies.forEach((freq, i) => {
+                    setTimeout(() => {
+                        const oscillator = audioContext.createOscillator();
+                        const gainNode = audioContext.createGain();
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+                        
+                        oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
+                        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                        
+                        oscillator.start();
+                        oscillator.stop(audioContext.currentTime + 0.3);
+                    }, i * 100);
+                });
+            };
+        }
+
+        let gameState = {
+            cards: [],
+            flippedCards: [],
+            currentPlayer: 1,
+            scores: [0, 0],
+            gameOver: false,
+            canFlip: true,
+            cardPositions: []
+        };
+
+        function createParticles() {
+            const container = document.getElementById('particles');
+            container.innerHTML = '';
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.width = Math.random() * 8 + 4 + 'px';
+                particle.style.height = particle.style.width;
+                particle.style.animationDelay = Math.random() * 8 + 's';
+                particle.style.animationDuration = (Math.random() * 4 + 6) + 's';
+                container.appendChild(particle);
+            }
+        }
+
+        function shuffleArray(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+
+        function generateRandomPositions() {
+            const gameArea = document.getElementById('gameArea');
+            const areaRect = gameArea.getBoundingClientRect();
+            const positions = [];
+            const cardWidth = window.innerWidth <= 480 ? 45 : (window.innerWidth <= 768 ? 50 : 60);
+            const cardHeight = window.innerWidth <= 480 ? 65 : (window.innerWidth <= 768 ? 75 : 90);
+            const padding = 20;
+            
+            // Create a 5x4 grid with slight random offsets
+            const cols = 5;
+            const rows = 4;
+            const gridWidth = (areaRect.width - padding * 2) / cols;
+            const gridHeight = (areaRect.height - padding * 2) / rows;
+            
+            for (let i = 0; i < 20; i++) {
+                const col = i % cols;
+                const row = Math.floor(i / cols);
+                
+                // Base position in grid
+                const baseX = col * gridWidth + gridWidth / 2 - cardWidth / 2 + padding;
+                const baseY = row * gridHeight + gridHeight / 2 - cardHeight / 2 + padding;
+                
+                // Add small random offset (max 20px in any direction)
+                const offsetX = (Math.random() - 0.5) * 40;
+                const offsetY = (Math.random() - 0.5) * 40;
+                
+                positions.push({
+                    x: baseX + offsetX,
+                    y: baseY + offsetY,
+                    rotation: (Math.random() - 0.5) * 20 // Smaller rotation range
+                });
+            }
+            return positions;
+        }
+
+        function startGame() {
+            // Initialize sounds when user interaction starts
+            try {
+                initSounds();
+            } catch (error) {
+                console.log('Audio context initialization failed:', error);
+            }
+            
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'block';
+            initializeGame();
+        }
+
+        function initializeGame() {
+            const numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+            const cardPairs = [...numbers, ...numbers];
+            gameState.cards = shuffleArray(cardPairs);
+            gameState.cardPositions = generateRandomPositions();
+            
+            createGameBoard();
+            updatePlayerDisplay();
+        }
+
+        function createGameBoard() {
+            const gameArea = document.getElementById('gameArea');
+            gameArea.innerHTML = '';
+            
+            gameState.cards.forEach((number, index) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.dataset.index = index;
+                card.dataset.value = number;
+                card.style.left = gameState.cardPositions[index].x + 'px';
+                card.style.top = gameState.cardPositions[index].y + 'px';
+                card.style.transform = `rotate(${gameState.cardPositions[index].rotation}deg)`;
+                card.innerHTML = `
+                    <div class="card-back">?</div>
+                    <div class="card-content">${number}</div>
+                `;
+                card.addEventListener('click', handleCardClick);
+                gameArea.appendChild(card);
+            });
+        }
+
+        function handleCardClick(event) {
+            if (!gameState.canFlip || gameState.gameOver) return;
+            
+            const card = event.currentTarget;
+            const index = parseInt(card.dataset.index);
+            
+            if (card.classList.contains('flipped') || card.classList.contains('matched')) return;
+            if (gameState.flippedCards.length >= 2) return;
+            
+            // Play card flip sound
+            try {
+                sounds.cardFlip();
+            } catch (error) {
+                console.log('Sound play failed:', error);
+            }
+            
+            card.classList.add('flipped');
+            gameState.flippedCards.push({ element: card, index, value: parseInt(card.dataset.value) });
+            
+            if (gameState.flippedCards.length === 2) {
+                gameState.canFlip = false;
+                setTimeout(checkMatch, 1000);
+            }
+        }
+
+        function checkMatch() {
+            const [card1, card2] = gameState.flippedCards;
+            
+            if (card1.value === card2.value) {
+                // Match found
+                card1.element.classList.add('matched');
+                card2.element.classList.add('matched');
+                gameState.scores[gameState.currentPlayer - 1]++;
+                
+                // Play match sound
+                try {
+                    sounds.match();
+                } catch (error) {
+                    console.log('Sound play failed:', error);
+                }
+                
+                // Animate score to player circle
+                animateScoreToPlayer(card1.element, card2.element);
+                
+                setTimeout(() => {
+                    updateScore();
+                    
+                    // Check if game is over
+                    if (document.querySelectorAll('.card.matched').length === 20) {
+                        setTimeout(endGame, 500);
+                    }
+                }, 1000);
+            } else {
+                // No match - play wrong sound and flip back
+                try {
+                    sounds.wrong();
+                } catch (error) {
+                    console.log('Sound play failed:', error);
+                }
+                
+                setTimeout(() => {
+                    card1.element.classList.remove('flipped');
+                    card2.element.classList.remove('flipped');
+                    switchPlayer();
+                }, 600);
+            }
+            
+            gameState.flippedCards = [];
+            gameState.canFlip = true;
+        }
+
+        function animateScoreToPlayer(card1, card2) {
+            const targetCircle = document.getElementById(gameState.currentPlayer === 1 ? 'player1Circle' : 'player2Circle');
+            const targetRect = targetCircle.getBoundingClientRect();
+            
+            [card1, card2].forEach((card, i) => {
+                const cardRect = card.getBoundingClientRect();
+                const scoreEl = document.createElement('div');
+                scoreEl.className = 'score-animation';
+                scoreEl.textContent = '+1';
+                scoreEl.style.left = cardRect.left + cardRect.width/2 + 'px';
+                scoreEl.style.top = cardRect.top + cardRect.height/2 + 'px';
+                scoreEl.style.color = gameState.currentPlayer === 1 ? '#4facfe' : '#fa709a';
+                
+                document.body.appendChild(scoreEl);
+                
+                setTimeout(() => {
+                    scoreEl.style.transition = 'all 1s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                    scoreEl.style.left = targetRect.left + targetRect.width/2 + 'px';
+                    scoreEl.style.top = targetRect.top + targetRect.height/2 + 'px';
+                    scoreEl.style.opacity = '0';
+                    scoreEl.style.transform = 'scale(1.5)';
+                }, i * 200);
+                
+                setTimeout(() => {
+                    document.body.removeChild(scoreEl);
+                }, 1200 + i * 200);
+            });
+        }
+
+        function switchPlayer() {
+            gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
+            updatePlayerDisplay();
+        }
+
+        function updatePlayerDisplay() {
+            const player1 = document.getElementById('player1Circle');
+            const player2 = document.getElementById('player2Circle');
+            
+            player1.classList.toggle('active', gameState.currentPlayer === 1);
+            player2.classList.toggle('active', gameState.currentPlayer === 2);
+        }
+
+        function updateScore() {
+            document.getElementById('player1Circle').textContent = gameState.scores[0];
+            document.getElementById('player2Circle').textContent = gameState.scores[1];
+        }
+
+        function endGame() {
+            gameState.gameOver = true;
+            
+            // Play game win sound
+            try {
+                sounds.gameWin();
+            } catch (error) {
+                console.log('Sound play failed:', error);
+            }
+            
+            const overlay = document.getElementById('gameOverOverlay');
+            const winnerText = document.getElementById('winnerText');
+            
+            if (gameState.scores[0] > gameState.scores[1]) {
+                winnerText.textContent = `🔵 Player 1 wins with ${gameState.scores[0]} pairs!`;
+            } else if (gameState.scores[1] > gameState.scores[0]) {
+                winnerText.textContent = `🔴 Player 2 wins with ${gameState.scores[1]} pairs!`;
+            } else {
+                winnerText.textContent = `🤝 It's a tie! Both players found ${gameState.scores[0]} pairs!`;
+            }
+            
+            overlay.style.display = 'flex';
+        }
+
+        function restartGame() {
+            // Reset game state
+            gameState = {
+                cards: [],
+                flippedCards: [],
+                currentPlayer: 1,
+                scores: [0, 0],
+                gameOver: false,
+                canFlip: true,
+                cardPositions: []
+            };
+            
+            // Hide game over overlay
+            document.getElementById('gameOverOverlay').style.display = 'none';
+            
+            // Restart the game directly
+            initializeGame();
+        }
+
+        function exitGame() {
+            // Reset game state
+            gameState = {
+                cards: [],
+                flippedCards: [],
+                currentPlayer: 1,
+                scores: [0, 0],
+                gameOver: false,
+                canFlip: true,
+                cardPositions: []
+            };
+            
+            // Hide game over overlay and game screen
+            document.getElementById('gameOverOverlay').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'none';
+            
+            // Show start screen
+            document.getElementById('startScreen').style.display = 'flex';
+        }
+
+        // Initialize
+        createParticles();
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (document.getElementById('gameScreen').style.display !== 'none') {
+                gameState.cardPositions = generateRandomPositions();
+                createGameBoard();
+            }
+        });
+    </script>
+</body>
+</html>
